@@ -1,4 +1,4 @@
-# EduTikTok - Educational Content Platform
+# EduTok - Educational Content Platform
 
 A TikTok-like application focused exclusively on educational content in data engineering, AI, technology, and data science. This platform filters out entertainment content to provide a productive learning experience.
 
