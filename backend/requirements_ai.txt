@@ -1,0 +1,12 @@
+# AI Service Dependencies
+openai>=1.0.0
+elevenlabs>=0.2.0
+aiohttp>=3.8.0
+
+# Optional: For advanced video processing
+# moviepy>=1.0.3
+# ffmpeg-python>=0.2.0
+
+# Optional: For image processing
+# Pillow>=9.0.0
+# opencv-python>=4.5.0 

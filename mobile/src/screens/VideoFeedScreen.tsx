@@ -1,15 +1,31 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { useRoute } from '@react-navigation/native';
 import { EducationalVideo } from '../types';
 import { useEducationalVideos } from '../hooks/useEducationalVideos';
+import { useVideoPlayback } from '../hooks/useVideoPlayback';
 import { formatNumber } from '../utils/formatters';
+import VideoPlayer from '../components/VideoPlayer';
 
 const { height, width } = Dimensions.get('window');
 
 const VideoFeedScreen = () => {
+  const route = useRoute();
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const { videos, loading, error, category, fetchVideosByCategory } = useEducationalVideos();
+
+  // Handle navigation from search screen
+  useEffect(() => {
+    const params = route.params as { videoIndex?: number };
+    if (params?.videoIndex !== undefined && flatListRef.current) {
+      setCurrentVideoIndex(params.videoIndex);
+      flatListRef.current.scrollToIndex({
+        index: params.videoIndex,
+        animated: true,
+      });
+    }
+  }, [route.params]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -18,19 +34,47 @@ const VideoFeedScreen = () => {
   }, []);
 
   const viewabilityConfig = {
-    itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100,
+    itemVisiblePercentThreshold: 80,
+    minimumViewTime: 300,
+  };
+
+  // Helper function to get full video URL
+  const getVideoUrl = (videoUrl: string) => {
+    // If it's already a full URL, return as is
+    if (videoUrl.startsWith('http')) {
+      return videoUrl;
+    }
+    // If it's a relative path, prepend the backend URL
+    return `http://localhost:8000${videoUrl}`;
   };
 
   const renderVideoItem = useCallback(({ item, index }: { item: EducationalVideo; index: number }) => {
+    const isCurrentVideo = index === currentVideoIndex;
+    
+    // Use the actual video URL from the API
+    const videoUrl = getVideoUrl(item.videoUrl);
+    
     return (
       <View style={styles.videoContainer}>
-        {/* Video Placeholder */}
-        <View style={styles.videoPlaceholder}>
-          <Image source={{ uri: item.thumbnailUrl }} style={styles.videoThumbnail} />
-          <View style={styles.playButton}>
-            <Text style={styles.playIcon}>▶️</Text>
-          </View>
+        {/* Video Player */}
+        <View style={styles.videoPlayerContainer}>
+          <VideoPlayer
+            videoUrl={videoUrl}
+            thumbnailUrl={item.thumbnailUrl}
+            autoPlay={isCurrentVideo}
+            loop={false}
+            muted={false}
+            onPlaybackStatusUpdate={(status) => {
+              // Handle playback status updates
+              console.log('Playback status:', status);
+            }}
+            onVideoEnd={() => {
+              console.log('Video ended:', item.title);
+            }}
+            onError={(error) => {
+              console.error('Video error:', error);
+            }}
+          />
         </View>
         
         {/* Video Info Overlay */}
@@ -72,7 +116,7 @@ const VideoFeedScreen = () => {
         </View>
       </View>
     );
-  }, []);
+  }, [currentVideoIndex]);
 
   if (loading) {
     return (
@@ -106,14 +150,17 @@ const VideoFeedScreen = () => {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         removeClippedSubviews={false}
-        maxToRenderPerBatch={3}
-        windowSize={5}
+        maxToRenderPerBatch={1}
+        windowSize={3}
         initialNumToRender={1}
         getItemLayout={(data, index) => ({
           length: height,
           offset: height * index,
           index,
         })}
+        snapToInterval={height}
+        snapToAlignment="start"
+        decelerationRate="fast"
       />
     </View>
   );
@@ -164,29 +211,9 @@ const styles = StyleSheet.create({
     width: width,
     position: 'relative',
   },
-  videoPlaceholder: {
+  videoPlayerContainer: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  videoThumbnail: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  playButton: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 50,
-    width: 80,
-    height: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playIcon: {
-    fontSize: 30,
+    backgroundColor: '#000',
   },
   videoInfo: {
     position: 'absolute',
