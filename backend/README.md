@@ -1,25 +1,27 @@
-# EduTok Backend
+# EduTok Backend - AI-Powered Educational Content API
 
-A FastAPI-based backend for the EduTok educational content platform. This backend provides APIs for video management, user authentication, progress tracking, and social interactions.
+A FastAPI-based backend for the EduTok educational content platform. This backend provides APIs for AI-generated video content, user authentication, progress tracking, and content generation services.
 
 ## Features
 
+- **AI Content Generation**: Automated creation of educational videos using AI
 - **User Authentication**: JWT-based authentication with registration and login
-- **Video Management**: CRUD operations for educational videos with search and filtering
+- **Video Management**: CRUD operations for AI-generated educational videos
 - **Progress Tracking**: Watch history and learning analytics
-- **Social Features**: Likes, comments, and bookmarks
-- **Creator Management**: Educational content creator profiles
-- **YouTube Integration**: API utilities for fetching educational content
+- **Content Creation**: User-generated content capabilities
+- **AI Services Integration**: OpenAI GPT and ElevenLabs for content generation
+- **Video Processing**: Automated video synthesis and editing
 
 ## Tech Stack
 
 - **FastAPI**: Modern, fast web framework for building APIs
 - **SQLAlchemy**: SQL toolkit and ORM
-- **PostgreSQL**: Primary database
-- **Redis**: Caching and session storage
+- **SQLite**: Development database (PostgreSQL for production)
 - **JWT**: JSON Web Tokens for authentication
 - **Pydantic**: Data validation using Python type annotations
-- **Alembic**: Database migrations
+- **OpenAI GPT**: AI script generation
+- **ElevenLabs**: Text-to-speech synthesis
+- **Video Processing**: Automated video creation and editing
 
 ## Setup Instructions
 
@@ -28,6 +30,7 @@ A FastAPI-based backend for the EduTok educational content platform. This backen
 ```bash
 cd backend
 pip install -r requirements.txt
+pip install -r requirements_ai.txt  # AI-specific dependencies
 ```
 
 ### 2. Environment Configuration
@@ -42,19 +45,17 @@ Edit `.env` with your configuration:
 
 ```env
 # Database Configuration
-DATABASE_URL=postgresql://user:password@localhost:5432/edutok_db
-DATABASE_URL_ASYNC=postgresql+asyncpg://user:password@localhost:5432/edutok_db
+DATABASE_URL=sqlite:///./edutok.db
+DATABASE_URL_ASYNC=sqlite+aiosqlite:///./edutok.db
 
 # Security
 SECRET_KEY=your-secret-key-here
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-# Redis Configuration
-REDIS_URL=redis://localhost:6379
-
-# YouTube API (Optional)
-YOUTUBE_API_KEY=your-youtube-api-key
+# AI Services
+OPENAI_API_KEY=your-openai-api-key
+ELEVENLABS_API_KEY=your-elevenlabs-api-key
 
 # Environment
 ENVIRONMENT=development
@@ -63,23 +64,7 @@ DEBUG=true
 
 ### 3. Database Setup
 
-#### Option A: Using SQLite (Development)
-
-For quick development setup, you can use SQLite by modifying the database URLs in `.env`:
-
-```env
-DATABASE_URL=sqlite:///./edutok.db
-DATABASE_URL_ASYNC=sqlite+aiosqlite:///./edutok.db
-```
-
-#### Option B: Using PostgreSQL (Production)
-
-1. Install PostgreSQL
-2. Create a database:
-   ```sql
-   CREATE DATABASE edutok_db;
-   ```
-3. Update the `.env` file with your PostgreSQL credentials
+The application uses SQLite by default for development. For production, you can switch to PostgreSQL by updating the database URLs in `.env`.
 
 ### 4. Run the Application
 
@@ -110,9 +95,9 @@ python seed_db.py
 ```
 
 This will create:
-- 5 educational content creators
-- 5 sample videos
-- 2 test users (test@example.com / password123)
+- Sample educational content creators
+- AI-generated video content
+- Test users for development
 
 ## API Documentation
 
@@ -129,13 +114,20 @@ Once the server is running, you can access:
 - `POST /auth/login` - User login
 - `GET /auth/me` - Get current user info
 
-### Videos
-- `GET /videos` - List videos with filtering
+### Videos (AI-Generated Content)
+- `GET /videos` - List AI-generated videos with filtering
 - `GET /videos/{id}` - Get specific video
 - `GET /videos/category/{category}` - Get videos by category
+- `POST /videos/generate` - Generate new AI content
 - `POST /videos` - Create video (admin only)
 - `PUT /videos/{id}` - Update video (admin only)
 - `DELETE /videos/{id}` - Delete video (admin only)
+
+### AI Content Generation
+- `POST /videos/generate-script` - Generate educational script
+- `POST /videos/generate-audio` - Generate voice narration
+- `POST /videos/create-video` - Create complete video
+- `GET /videos/generation-status/{id}` - Check generation status
 
 ### Progress
 - `GET /progress/me` - Get user progress
@@ -143,86 +135,85 @@ Once the server is running, you can access:
 - `POST /progress/watch-history` - Add watch record
 - `DELETE /progress/watch-history/{video_id}` - Delete watch record
 
-### Interactions
-- `POST /interactions/likes` - Like a video
-- `DELETE /interactions/likes/{video_id}` - Unlike a video
-- `GET /interactions/likes/{video_id}` - Check like status
-- `GET /interactions/comments/{video_id}` - Get video comments
-- `POST /interactions/comments` - Add comment
-- `DELETE /interactions/comments/{comment_id}` - Delete comment
-- `POST /interactions/bookmarks` - Bookmark video
-- `DELETE /interactions/bookmarks/{video_id}` - Remove bookmark
-- `GET /interactions/bookmarks` - Get user bookmarks
-
-### Creators
-- `GET /creators` - List creators
-- `GET /creators/{id}` - Get specific creator
-- `POST /creators` - Create creator (admin only)
-- `PUT /creators/{id}` - Update creator (admin only)
-- `DELETE /creators/{id}` - Delete creator (admin only)
-
 ### Users
 - `GET /users/me` - Get current user
 - `PUT /users/me` - Update current user
 - `DELETE /users/me` - Delete current user
+
+## AI Content Generation
+
+### Script Generation
+The backend uses OpenAI GPT to generate educational scripts based on:
+- Topic selection
+- Difficulty level
+- Target audience
+- Learning objectives
+
+### Voice Synthesis
+ElevenLabs integration provides:
+- Natural-sounding narration
+- Multiple voice options
+- Emotion and tone control
+- High-quality audio output
+
+### Video Creation
+Automated video generation includes:
+- Script-to-video conversion
+- Visual content generation
+- Audio-video synchronization
+- Quality optimization
 
 ## Database Schema
 
 ### Users
 - Authentication and profile information
 - Learning progress tracking
-- Social interactions
+- Content generation preferences
 
 ### Videos
-- Educational content metadata
-- Creator relationships
-- Engagement metrics
+- AI-generated educational content metadata
+- Generation parameters and settings
+- Engagement metrics and analytics
 
 ### Creators
-- Educational content creator profiles
-- Platform integration data
-- Verification status
+- AI content creator profiles
+- Generation style preferences
+- Content quality metrics
 
 ### Progress
 - User learning analytics
 - Watch history tracking
-- Streak calculations
-
-### Interactions
-- Likes, comments, and bookmarks
-- User engagement tracking
-- Social features
+- Content engagement patterns
 
 ## Development
 
-### Adding New Endpoints
+### Adding New AI Features
 
-1. Create a new router in `app/routers/`
-2. Add schemas in `app/schemas/`
-3. Update models if needed in `app/models/`
-4. Include the router in `app/main.py`
+1. Create new services in `app/services/`
+2. Add schemas for AI requests/responses in `app/schemas/`
+3. Update routers to include AI endpoints
+4. Test with sample content generation
 
-### Database Migrations
+### AI Service Integration
 
-For production, use Alembic for database migrations:
+The backend integrates with multiple AI services:
 
-```bash
-# Initialize Alembic
-alembic init alembic
+```python
+# Example: Generate educational script
+from app.services.ai_content_generator import ai_content_generator
 
-# Create a migration
-alembic revision --autogenerate -m "Description"
-
-# Apply migrations
-alembic upgrade head
+script = await ai_content_generator.generate_script(
+    topic="Machine Learning Basics",
+    difficulty="beginner",
+    duration_minutes=3
+)
 ```
 
-### Testing
-
-Run tests with pytest:
+### Testing AI Features
 
 ```bash
-pytest
+# Test AI content generation
+python -m pytest tests/test_ai_content.py
 ```
 
 ## Deployment
@@ -235,8 +226,8 @@ Create a `Dockerfile`:
 FROM python:3.11-slim
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+COPY requirements.txt requirements_ai.txt ./
+RUN pip install -r requirements.txt -r requirements_ai.txt
 
 COPY . .
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -246,17 +237,44 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 Set these environment variables in production:
 
-- `DATABASE_URL`: PostgreSQL connection string
+- `DATABASE_URL`: Database connection string
 - `SECRET_KEY`: Strong secret key for JWT
-- `REDIS_URL`: Redis connection string
+- `OPENAI_API_KEY`: OpenAI API key for content generation
+- `ELEVENLABS_API_KEY`: ElevenLabs API key for voice synthesis
 - `ENVIRONMENT`: Set to "production"
+
+## AI Content Categories
+
+### Data Engineering
+- SQL tutorials and best practices
+- Data pipeline concepts and implementation
+- ETL process design and optimization
+- Database design and architecture
+
+### AI & Machine Learning
+- Machine learning fundamentals
+- Neural network concepts
+- Deep learning applications
+- AI ethics and responsible development
+
+### Technology
+- Programming language tutorials
+- Software development methodologies
+- Cloud computing and DevOps
+- Emerging technology trends
+
+### Data Science
+- Statistical analysis techniques
+- Data visualization principles
+- Predictive modeling approaches
+- Business intelligence applications
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
+4. Add tests for AI features
 5. Submit a pull request
 
 ## License
