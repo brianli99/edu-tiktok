@@ -120,6 +120,23 @@ start_mobile() {
     fi
 }
 
+# Function to start mobile app with QR code display
+start_mobile_foreground() {
+    print_status "Starting mobile app with QR code display..."
+    
+    if check_port $MOBILE_PORT; then
+        print_warning "Mobile app is already running on port $MOBILE_PORT"
+        return 1
+    fi
+    
+    cd mobile
+    print_status "Starting Expo development server..."
+    print_status "QR code will appear below. Press Ctrl+C to stop."
+    echo ""
+    npx expo start --port $MOBILE_PORT
+    cd ..
+}
+
 # Function to stop backend
 stop_backend() {
     local pid=$(get_pid $BACKEND_PID_FILE)
@@ -240,16 +257,18 @@ show_help() {
     echo "Usage: $0 [COMMAND]"
     echo ""
     echo "Commands:"
-    echo "  start     Start both backend and mobile app"
+    echo "  start     Start both backend and mobile app (background)"
+    echo "  start-ui  Start backend in background, mobile app with QR code"
     echo "  stop      Stop both backend and mobile app"
     echo "  restart   Restart both apps"
     echo "  status    Show current status of apps"
     echo "  help      Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 start    # Start the application"
-    echo "  $0 stop     # Stop the application"
-    echo "  $0 status   # Check app status"
+    echo "  $0 start     # Start both apps in background"
+    echo "  $0 start-ui  # Start backend + mobile with QR code"
+    echo "  $0 stop      # Stop the application"
+    echo "  $0 status    # Check app status"
     echo ""
 }
 
@@ -257,6 +276,26 @@ show_help() {
 case "${1:-help}" in
     start)
         start_apps
+        ;;
+    start-ui)
+        print_header
+        print_status "Starting EduTok application with UI..."
+        echo ""
+        
+        # Start backend in background
+        if start_backend; then
+            print_status "Backend health check..."
+            sleep 2
+            if curl -s http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; then
+                print_status "Backend is healthy"
+            else
+                print_warning "Backend health check failed"
+            fi
+        fi
+        
+        echo ""
+        print_status "Starting mobile app with QR code..."
+        start_mobile_foreground
         ;;
     stop)
         stop_apps

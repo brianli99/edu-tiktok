@@ -2,11 +2,18 @@
 
 ## 🚀 Quick Commands
 
-### Start the App
+### Start the App (Background)
 ```bash
 ./app start
 # or
 ./start_app.sh start
+```
+
+### Start the App with QR Code
+```bash
+./app start-ui
+# or
+./start_app.sh start-ui
 ```
 
 ### Stop the App
@@ -49,6 +56,7 @@ Once started, you can access:
 ## 🔧 Features
 
 - ✅ **Automatic startup** of both backend and mobile app
+- ✅ **QR code display** with `start-ui` command
 - ✅ **Process tracking** with PID files
 - ✅ **Health checks** for backend
 - ✅ **Colored output** for easy reading
