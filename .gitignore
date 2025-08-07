@@ -84,6 +84,11 @@ thumbnails/
 *.temp
 .cache/
 
+# App management files
+.backend.pid
+.mobile.pid
+app.log
+
 # Coverage reports
 htmlcov/
 .coverage
