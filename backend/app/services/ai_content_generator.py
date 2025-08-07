@@ -8,7 +8,7 @@ from ..models.video import Video, VideoCategory, VideoDifficulty, ContentSource,
 from ..models.creator import Creator
 from ..schemas.video import VideoCreate, VideoUpdate
 from ..database import get_db
-# from .ai_services import ai_service_manager  # Temporarily disabled
+from .ai_services import AIServiceManager
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,7 @@ class AIContentGenerator:
     def __init__(self):
         self.supported_categories = [cat.value for cat in VideoCategory]
         self.supported_difficulties = [diff.value for diff in VideoDifficulty]
+        self.ai_service_manager = AIServiceManager()
     
     async def generate_video_script(
         self,
@@ -44,37 +45,22 @@ class AIContentGenerator:
             Dict containing script, metadata, and generation info
         """
         try:
-            # Placeholder script generation (AI services temporarily disabled)
-            script = f"""
-                Welcome to this {difficulty.value}-friendly {category.value} tutorial! Today we're learning about {topic}.
-                
-                In this {duration_minutes}-minute video, I'll show you the fundamentals in a {style} way that's perfect for {target_audience}.
-                
-                Let's start with the basics and work our way up to something you can actually use in your projects.
-                
-                [Script content would be generated here based on the topic]
-                
-                That's it for today! Don't forget to practice what you've learned.
-                """
+            # Use real AI service for script generation
+            result = await self.ai_service_manager.generate_script_with_chatgpt(
+                topic=topic,
+                category=category.value,
+                difficulty=difficulty.value,
+                target_audience=target_audience,
+                duration_minutes=duration_minutes,
+                style=style
+            )
             
-            return {
-                "script": script,
-                "metadata": {
-                    "topic": topic,
-                    "category": category.value,
-                    "difficulty": difficulty.value,
-                    "target_audience": target_audience,
-                    "duration_minutes": duration_minutes,
-                    "style": style,
-                    "generated_at": datetime.now().isoformat(),
-                    "ai_model": "placeholder"
-                },
-                "ai_tools_used": ["placeholder"]
-            }
+            return result
             
         except Exception as e:
             logger.error(f"Error generating script: {e}")
-            raise
+            # Fallback to placeholder if AI service fails
+            return await self._generate_fallback_script(topic, category, difficulty, target_audience, duration_minutes, style)
     
     async def create_video_from_script(
         self,
@@ -102,18 +88,27 @@ class AIContentGenerator:
             Video object
         """
         try:
-            # Placeholder video creation (AI services temporarily disabled)
             db = next(get_db())
             
-            # Generate placeholder URLs
-            video_url = f"https://example.com/generated-videos/{title.lower().replace(' ', '-')}.mp4"
-            thumbnail_url = f"https://example.com/thumbnails/{title.lower().replace(' ', '-')}.jpg"
+            # Generate audio using ElevenLabs
+            audio_result = await self.ai_service_manager.generate_voice_with_elevenlabs(
+                script=script,
+                voice_settings=voice_settings
+            )
             
+            # Generate video placeholder (since full video generation requires more complex setup)
+            video_result = await self.ai_service_manager.generate_video_placeholder(
+                script=script,
+                visual_style=visual_style,
+                duration_seconds=180  # 3 minutes
+            )
+            
+            # Create video record with real AI-generated content
             video_data = VideoCreate(
                 title=title,
                 description=f"AI-generated educational content about {title}",
-                video_url=video_url,
-                thumbnail_url=thumbnail_url,
+                video_url=video_result.get("video_url", f"/data/{title.lower().replace(' ', '-')}.mp4"),
+                thumbnail_url=video_result.get("thumbnail_url", f"/thumbnails/{title.lower().replace(' ', '-')}.jpg"),
                 duration=180,  # 3 minutes
                 category=category,
                 difficulty=difficulty,
@@ -126,12 +121,14 @@ class AIContentGenerator:
                 content_source=ContentSource.AI_GENERATED,
                 generation_status=GenerationStatus.COMPLETED,
                 ai_prompt=f"Create an educational video about {title}",
-                ai_tools_used=["placeholder"],
+                ai_tools_used=audio_result.get("ai_tools_used", []) + video_result.get("ai_tools_used", []),
                 generation_metadata={
                     "script_length": len(script),
+                    "audio_duration": audio_result.get("duration", 0),
                     "generation_time": datetime.now().isoformat(),
-                    "tools_used": ["placeholder"],
-                    "note": "AI services temporarily disabled"
+                    "tools_used": audio_result.get("ai_tools_used", []) + video_result.get("ai_tools_used", []),
+                    "voice_settings": voice_settings,
+                    "visual_style": visual_style
                 },
                 script_content=script,
                 voice_settings=voice_settings or {
@@ -258,6 +255,39 @@ class AIContentGenerator:
         """
         
         return templates.get(category, {}).get(difficulty, default_template)
+    
+    async def _generate_fallback_script(
+        self,
+        topic: str,
+        category: VideoCategory,
+        difficulty: VideoDifficulty,
+        target_audience: str,
+        duration_minutes: int,
+        style: str
+    ) -> Dict[str, Any]:
+        """Generate a fallback script when AI service is unavailable"""
+        template = self._get_script_template(category, difficulty)
+        script = template.format(
+            topic=topic,
+            duration=duration_minutes,
+            style=style,
+            target_audience=target_audience
+        )
+        
+        return {
+            "script": script,
+            "metadata": {
+                "topic": topic,
+                "category": category.value,
+                "difficulty": difficulty.value,
+                "target_audience": target_audience,
+                "duration_minutes": duration_minutes,
+                "style": style,
+                "generated_at": datetime.now().isoformat(),
+                "ai_model": "fallback"
+            },
+            "ai_tools_used": ["fallback"]
+        }
 
 
 # Global instance

@@ -310,6 +310,31 @@ async def generate_video_script(
     current_user: User = Depends(get_current_user)
 ):
     """
+    Generate an educational video script using AI
+    """
+    try:
+        result = await ai_content_generator.generate_video_script(
+            topic=topic,
+            category=category,
+            difficulty=difficulty,
+            target_audience=target_audience,
+            duration_minutes=duration_minutes,
+            style=style
+        )
+        
+        return {
+            "success": True,
+            "script": result["script"],
+            "metadata": result["metadata"],
+            "ai_tools_used": result.get("ai_tools_used", [])
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate script: {str(e)}"
+        )
+    """
     Generate a video script using AI
     """
     try:
@@ -626,6 +651,18 @@ async def get_upload_stats():
 
 @router.get("/ai/service-status")
 async def get_ai_service_status():
+    """
+    Get the status of AI services
+    """
+    from ..services.ai_services import AIServiceManager
+    
+    ai_manager = AIServiceManager()
+    status = ai_manager.get_service_status()
+    
+    return {
+        "services": status,
+        "timestamp": datetime.now().isoformat()
+    }
     """
     Get status of all AI services
     """
