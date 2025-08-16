@@ -38,9 +38,13 @@ export const useEducationalVideos = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching videos from API...');
 
       const response = await videosAPI.getVideos();
+      console.log('API response received:', response.data);
       const fetchedVideos = response.data.videos.map(mapVideoData);
+      console.log('Mapped videos:', fetchedVideos.length, 'videos');
+      console.log('First video:', fetchedVideos[0]?.title, fetchedVideos[0]?.videoUrl);
       
       setVideos(fetchedVideos);
     } catch (err: any) {

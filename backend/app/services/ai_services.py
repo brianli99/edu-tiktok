@@ -5,9 +5,20 @@ import asyncio
 import aiohttp
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-import openai
-from elevenlabs import generate, save, set_api_key
-from elevenlabs.api import History
+
+# Optional imports for AI services
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+try:
+    from elevenlabs import generate, save, set_api_key
+    from elevenlabs.api import History
+    ELEVENLABS_AVAILABLE = True
+except ImportError:
+    ELEVENLABS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -20,21 +31,27 @@ class AIServiceManager:
     def _initialize_services(self):
         """Initialize AI service clients"""
         # OpenAI/ChatGPT
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        if openai_api_key:
-            openai.api_key = openai_api_key
-            self.openai_client = openai
-            logger.info("✅ OpenAI/ChatGPT service initialized")
+        if OPENAI_AVAILABLE:
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            if openai_api_key:
+                openai.api_key = openai_api_key
+                self.openai_client = openai
+                logger.info("✅ OpenAI/ChatGPT service initialized")
+            else:
+                logger.warning("⚠️ OpenAI API key not found. ChatGPT features will be disabled.")
         else:
-            logger.warning("⚠️ OpenAI API key not found. ChatGPT features will be disabled.")
+            logger.warning("⚠️ OpenAI package not available. ChatGPT features will be disabled.")
         
         # ElevenLabs
-        self.elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
-        if self.elevenlabs_api_key:
-            set_api_key(self.elevenlabs_api_key)
-            logger.info("✅ ElevenLabs service initialized")
+        if ELEVENLABS_AVAILABLE:
+            self.elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY")
+            if self.elevenlabs_api_key:
+                set_api_key(self.elevenlabs_api_key)
+                logger.info("✅ ElevenLabs service initialized")
+            else:
+                logger.warning("⚠️ ElevenLabs API key not found. Voice synthesis will be disabled.")
         else:
-            logger.warning("⚠️ ElevenLabs API key not found. Voice synthesis will be disabled.")
+            logger.warning("⚠️ ElevenLabs package not available. Voice synthesis will be disabled.")
         
         # Note: Runway ML removed due to 10-second video limit
         # For longer videos, consider alternatives like:
@@ -114,7 +131,7 @@ class AIServiceManager:
         voice_settings: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Generate voice audio using ElevenLabs"""
-        if not self.elevenlabs_api_key:
+        if not ELEVENLABS_AVAILABLE or not self.elevenlabs_api_key:
             return self._generate_placeholder_audio(script)
         
         try:
@@ -324,8 +341,8 @@ class AIServiceManager:
     def get_service_status(self) -> Dict[str, bool]:
         """Get status of all AI services"""
         return {
-            "chatgpt": self.openai_client is not None,
-            "elevenlabs": self.elevenlabs_api_key is not None,
+            "chatgpt": OPENAI_AVAILABLE and self.openai_client is not None,
+            "elevenlabs": ELEVENLABS_AVAILABLE and self.elevenlabs_api_key is not None,
             "video_generation": "Manual upload required (Runway ML removed due to 10s limit)"
         }
 

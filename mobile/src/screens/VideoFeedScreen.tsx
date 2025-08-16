@@ -38,6 +38,8 @@ const VideoFeedScreen = () => {
     minimumViewTime: 300,
   };
 
+
+
   // Helper function to get full video URL
   const getVideoUrl = (videoUrl: string) => {
     // If it's already a full URL, return as is
@@ -53,6 +55,14 @@ const VideoFeedScreen = () => {
     
     // Use the actual video URL from the API
     const videoUrl = getVideoUrl(item.videoUrl);
+    
+    // Debug logging
+    if (index < 3) {
+      console.log(`Video ${index}: ${item.title}`);
+      console.log(`Original URL: ${item.videoUrl}`);
+      console.log(`Full URL: ${videoUrl}`);
+      console.log(`Is current video: ${isCurrentVideo}`);
+    }
     
     return (
       <View style={styles.videoContainer}>
@@ -72,7 +82,9 @@ const VideoFeedScreen = () => {
               console.log('Video ended:', item.title);
             }}
             onError={(error) => {
-              console.error('Video error:', error);
+              console.error('Video error for', item.title, ':', error);
+              console.log('Failed video URL:', videoUrl);
+              console.log('Original URL from API:', item.videoUrl);
             }}
           />
         </View>
@@ -118,6 +130,17 @@ const VideoFeedScreen = () => {
     );
   }, [currentVideoIndex]);
 
+  const keyExtractor = useCallback((item: EducationalVideo) => item.id, []);
+
+  const getItemLayout = useCallback(
+    (data: any, index: number) => ({
+      length: height,
+      offset: height * index,
+      index,
+    }),
+    [height]
+  );
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -144,20 +167,17 @@ const VideoFeedScreen = () => {
         ref={flatListRef}
         data={videos}
         renderItem={renderVideoItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         pagingEnabled
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        removeClippedSubviews={false}
-        maxToRenderPerBatch={1}
-        windowSize={3}
-        initialNumToRender={1}
-        getItemLayout={(data, index) => ({
-          length: height,
-          offset: height * index,
-          index,
-        })}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        windowSize={5}
+        initialNumToRender={2}
+        updateCellsBatchingPeriod={100}
+        getItemLayout={getItemLayout}
         snapToInterval={height}
         snapToAlignment="start"
         decelerationRate="fast"

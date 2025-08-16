@@ -48,10 +48,10 @@ export const authAPI = {
 // Videos API (now includes AI content generation)
 export const videosAPI = {
   // Basic video endpoints
-  getVideos: (params?: any) => api.get('/videos', { params }),
+  getVideos: (params?: any) => api.get('/videos/', { params }),
   getVideo: (id: number) => api.get(`/videos/${id}`),
   getVideosByCategory: (category: string, params?: any) => 
-    api.get(`/videos/category/${category}`, { params }),
+    api.get(`/videos/category/${category}/`, { params }),
   searchVideos: (query: string, params?: any) => 
     api.get('/videos/search/', { params: { ...params, q: query } }),
   

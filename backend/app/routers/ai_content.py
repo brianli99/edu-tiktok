@@ -23,7 +23,7 @@ async def get_videos(
     """
     Get all videos with optional filtering
     """
-    from sqlalchemy import and_
+    from sqlalchemy import and_, or_
     
     query = db.query(Video)
     
@@ -33,8 +33,14 @@ async def get_videos(
     if difficulty:
         query = query.filter(Video.difficulty == difficulty)
     
-    # Prioritize AI-generated content
-    query = query.order_by(Video.content_source.desc(), Video.created_at.desc())
+    # Filter to only show videos with actual files (the 3 real videos)
+    real_video_files = ['python-explained.mp4', 'sql-nosql.mp4', 'data-engineer.mp4']
+    video_url_filters = [Video.video_url.like(f'%{filename}%') for filename in real_video_files]
+    from sqlalchemy import or_
+    query = query.filter(or_(*video_url_filters))
+    
+    # Order by creation date
+    query = query.order_by(Video.created_at.desc())
     
     total = query.count()
     videos = query.offset(skip).limit(limit).all()
@@ -157,14 +163,24 @@ async def get_videos_by_category(
     db: Session = Depends(get_db)
 ):
     """
-    Get videos by category
+    Get videos by category (only real video files)
     """
     try:
         video_category = VideoCategory(category)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid category")
     
-    query = db.query(Video).filter(Video.category == video_category)
+    # Filter to only show videos with actual files (the 3 real videos)
+    real_video_files = ['python-explained.mp4', 'sql-nosql.mp4', 'data-engineer.mp4']
+    video_url_filters = [Video.video_url.like(f'%{filename}%') for filename in real_video_files]
+    from sqlalchemy import or_, and_
+    
+    query = db.query(Video).filter(
+        and_(
+            Video.category == video_category,
+            or_(*video_url_filters)
+        )
+    )
     total = query.count()
     videos = query.offset(skip).limit(limit).all()
     
@@ -230,14 +246,21 @@ async def search_videos(
     db: Session = Depends(get_db)
 ):
     """
-    Search videos by title or description
+    Search videos by title or description (only real video files)
     """
-    from sqlalchemy import or_
+    from sqlalchemy import or_, and_
+    
+    # Filter to only show videos with actual files (the 3 real videos)
+    real_video_files = ['python-explained.mp4', 'sql-nosql.mp4', 'data-engineer.mp4']
+    video_url_filters = [Video.video_url.like(f'%{filename}%') for filename in real_video_files]
     
     query = db.query(Video).filter(
-        or_(
-            Video.title.ilike(f"%{q}%"),
-            Video.description.ilike(f"%{q}%")
+        and_(
+            or_(*video_url_filters),
+            or_(
+                Video.title.ilike(f"%{q}%"),
+                Video.description.ilike(f"%{q}%")
+            )
         )
     )
     

@@ -48,6 +48,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   
   const videoRef = useRef<Video>(null);
 
+  // Effect to handle autoplay when the component mounts or autoPlay changes
+  useEffect(() => {
+    if (autoPlay && videoRef.current) {
+      console.log('Auto-playing video:', videoUrl);
+      videoRef.current.playAsync().catch(error => {
+        console.error('Failed to auto-play video:', error);
+      });
+    }
+  }, [autoPlay, videoUrl]);
+
   useEffect(() => {
     // Auto-hide controls after 3 seconds
     if (showControls && isPlaying) {
@@ -61,8 +71,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handlePlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (!status.isLoaded) {
       if (status.error) {
-        setError(`Video playback error: ${status.error}`);
-        onError?.(`Video playback error: ${status.error}`);
+        const errorMsg = `Video playback error: ${status.error}`;
+        setError(errorMsg);
+        onError?.(errorMsg);
+        console.error('Video error for URL:', videoUrl, 'Error:', status.error);
       }
       return;
     }
@@ -117,6 +129,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Failed to load video</Text>
+        <Text style={styles.errorSubText}>URL: {videoUrl}</Text>
+        <Text style={styles.errorDetails}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -141,9 +155,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           isLooping={loop}
           isMuted={muted}
           onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
+          onLoad={() => {
+            console.log('Video loaded successfully:', videoUrl);
+            setIsLoading(false);
+            console.log('Auto-play enabled:', autoPlay);
+            if (autoPlay && videoRef.current) {
+              console.log('Attempting to start playback...');
+              videoRef.current.playAsync().then(() => {
+                console.log('Playback started successfully');
+              }).catch((error) => {
+                console.error('Failed to start playback:', error);
+              });
+            }
+          }}
           onError={(error) => {
-            setError(`Video error: ${error}`);
-            onError?.(`Video error: ${error}`);
+            const errorMsg = `Video error: ${error}`;
+            setError(errorMsg);
+            onError?.(errorMsg);
+            console.error('Video error for URL:', videoUrl, 'Error:', error);
+            console.error('Error details:', JSON.stringify(error));
           }}
         />
 
@@ -317,11 +347,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000',
+    padding: 20,
   },
   errorText: {
     color: '#fff',
     fontSize: 16,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  errorSubText: {
+    color: '#ccc',
+    fontSize: 12,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  errorDetails: {
+    color: '#ff6b6b',
+    fontSize: 10,
     marginBottom: 20,
+    textAlign: 'center',
   },
   retryButton: {
     backgroundColor: '#FF6B6B',
@@ -336,4 +380,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VideoPlayer; 
+export default VideoPlayer;

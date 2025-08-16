@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # External APIs
     youtube_api_key: Optional[str] = None
     tiktok_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    elevenlabs_api_key: Optional[str] = None
     
     # Environment
     environment: str = "development"
